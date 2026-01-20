@@ -8,7 +8,7 @@
     <style>
         :root {
             --twitter-blue: #1d9bf0;
-            --twitter-dark: #15202b;
+            --twitter-dark: #15202b; /* 트위터 다크모드 배경색 */
             --border: #38444d;
             --netflix-red: #e50914;
             --select-blue: #2d88ff;
@@ -20,13 +20,13 @@
             color: white;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            overflow: hidden; /* 스크롤 절대 방지 */
         }
 
         /* 상단 월드컵 정보 바 */
         #top-bar {
             background-color: rgba(21, 32, 43, 0.95);
-            height: 45px;
+            height: 40px;
             display: none;
             align-items: center;
             justify-content: center;
@@ -36,13 +36,13 @@
             z-index: 100;
             border-bottom: 1px solid var(--border);
         }
-        #display-title { font-size: 0.9rem; font-weight: 800; }
-        #display-info { position: absolute; right: 15px; font-size: 0.75rem; color: #8899a6; }
+        #display-title { font-size: 0.85rem; font-weight: 800; }
+        #display-info { position: absolute; right: 10px; font-size: 0.7rem; color: #8899a6; }
 
-        /* 설정 화면 UI */
+        /* 설정 UI */
         #setup-ui {
             max-width: 480px;
-            margin: 60px auto;
+            margin: 50px auto;
             padding: 20px;
             background: #192734;
             border-radius: 12px;
@@ -51,18 +51,18 @@
         }
         input, textarea {
             width: 100%; background: var(--twitter-dark); color: white; border: 1px solid var(--border);
-            padding: 12px; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px;
+            padding: 10px; border-radius: 8px; box-sizing: border-box; margin-bottom: 10px;
         }
         .main-btn {
-            width: 100%; padding: 15px; background: var(--twitter-blue); color: white;
+            width: 100%; padding: 12px; background: var(--twitter-blue); color: white;
             border: none; border-radius: 30px; cursor: pointer; font-size: 1rem; font-weight: bold;
         }
-        #load-section { margin-top: 25px; border-top: 1px dashed var(--border); padding-top: 15px; text-align: left; }
-        #saved-list { margin-top: 10px; max-height: 180px; overflow-y: auto; background: var(--twitter-dark); border-radius: 8px; }
-        .saved-item { padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; font-size: 0.8rem; }
+        #load-section { margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px; text-align: left; }
+        #saved-list { margin-top: 10px; max-height: 150px; overflow-y: auto; background: var(--twitter-dark); border-radius: 8px; }
+        .saved-item { padding: 10px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; font-size: 0.8rem; }
 
         /* 게임 메인 레이아웃 */
-        #game-ui { display: none; height: 100vh; padding-top: 45px; box-sizing: border-box; }
+        #game-ui { display: none; height: 100vh; padding-top: 40px; box-sizing: border-box; }
         .container { display: flex; flex-direction: row; height: 100%; width: 100%; gap: 0; }
 
         /* 후보 카드 컨테이너 */
@@ -76,14 +76,14 @@
             position: relative;
         }
 
-        /* [상단] 후보 제목 바 */
+        /* [상단] 후보 이름 바 */
         .candidate-name {
             width: 100%;
-            height: 40px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 800;
             background: #000;
             z-index: 30; 
@@ -101,26 +101,23 @@
             background: #000;
         }
 
-        /* 트윗 카드 - 위치 및 하단 텍스트 은폐 수치 조정 */
+        /* 트윗 카드 - 컨트롤러 노출 및 하단 텍스트 가림 수치 정밀 조정 */
         .tweet-card {
             width: 100%;
             z-index: 10;
-            /* 카드를 살짝 아래로 내림 (기존 -110px -> -95px) */
-            margin-top: -95px; 
-            /* 하단 날짜 정보를 더 깊게 가림 (기존 -55px -> -75px) */
-            margin-bottom: -75px; 
-            /* 컨트롤러 옆 여백을 위해 배율을 미세하게 축소 */
-            transform: scale(0.98); 
+            margin-top: -100px; /* 상단 정보 가림 */
+            margin-bottom: -65px; /* 하단 날짜/시간 정보를 버튼 뒤로 밀어넣음 */
+            transform: scale(0.95); /* 컨트롤러 여백 확보를 위해 살짝 축소 */
             pointer-events: auto;
         }
 
-        /* [하단] 선택 버튼 - 높이를 키워 날짜/시간 정보를 확실히 가림 */
+        /* [하단] 선택 버튼 - 높이를 키워 날짜를 가리되, 전체 화면 비율에 맞춰 조정 */
         .inline-select-btn {
             width: 100%;
-            height: 70px; /* 높이를 키워 하단 정보 차단력 강화 */
+            height: 55px; /* 날짜를 가리기 위한 최소 높이 */
             border: none;
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 900;
             cursor: pointer;
             z-index: 30; 
@@ -128,27 +125,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* 버튼이 영상 위로 살짝 올라오게 하여 경계선 가림 */
-            margin-top: -5px; 
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.9);
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.8);
         }
         .btn-left { background-color: var(--netflix-red); }
         .btn-right { background-color: var(--select-blue); }
 
-        /* 모바일 최적화 */
+        /* 모바일 세로 배치 최적화 (한 화면에 두 개가 다 들어오도록) */
         @media (max-width: 768px) {
             .container { flex-direction: column; }
-            .candidate-wrapper { height: 50%; }
-            .candidate-name { height: 35px; font-size: 0.9rem; }
-            .inline-select-btn { height: 60px; font-size: 1.1rem; }
+            .candidate-wrapper { height: 50%; } /* 각 후보가 화면의 절반 차지 */
+            .candidate-name { height: 30px; font-size: 0.85rem; }
+            .inline-select-btn { height: 45px; font-size: 1rem; }
             .tweet-card { 
-                transform: scale(0.98); 
-                margin-top: -90px;
-                margin-bottom: -70px;
+                transform: scale(0.9); /* 모바일에서는 더 축소하여 컨트롤러 공간 확보 */
+                margin-top: -95px;
+                margin-bottom: -55px;
             } 
         }
 
-        #winner-display { display: none; padding-top: 80px; text-align: center; height: 100vh; overflow-y: auto; background: var(--twitter-dark); }
+        #winner-display { display: none; padding-top: 60px; text-align: center; height: 100vh; overflow-y: auto; background: var(--twitter-dark); }
     </style>
 </head>
 <body>
@@ -162,18 +157,18 @@
     </div>
 
     <div id="setup-ui">
-        <h2 style="color: var(--twitter-blue); margin-bottom: 20px;">이상형 월드컵</h2>
+        <h2 style="color: var(--twitter-blue); margin-bottom: 15px;">이상형 월드컵</h2>
         <input type="text" id="wc-title" placeholder="월드컵 제목">
-        <div class="mode-selector" style="display:flex; gap:8px; margin-bottom:15px;">
-            <button class="mode-btn active" id="mode-links-btn" onclick="setMode('links')">링크만</button>
-            <button class="mode-btn" id="mode-pairs-btn" onclick="setMode('pairs')">이름 + 링크</button>
+        <div class="mode-selector" style="display:flex; gap:8px; margin-bottom:12px;">
+            <button class="mode-btn active" id="mode-links-btn" onclick="setMode('links')" style="flex:1; padding:8px; background:#192734; border:1px solid var(--border); color:#8899a6; cursor:pointer; border-radius:8px;">링크만</button>
+            <button class="mode-btn" id="mode-pairs-btn" onclick="setMode('pairs')" style="flex:1; padding:8px; background:#192734; border:1px solid var(--border); color:#8899a6; cursor:pointer; border-radius:8px;">이름 + 링크</button>
         </div>
         <textarea id="data-input" rows="5" placeholder="트윗 링크들을 입력하세요"></textarea>
         <button class="main-btn" onclick="startGame()" style="margin-top:10px">게임 시작</button>
 
         <div id="load-section">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.85rem; font-weight:bold; color:#8899a6;">저장된 목록</span>
+                <span style="font-size:0.8rem; font-weight:bold; color:#8899a6;">저장된 목록</span>
                 <button onclick="loadSavedList()" style="background:none; border:none; color:var(--twitter-blue); cursor:pointer; font-size:0.75rem;">[새로고침]</button>
             </div>
             <div id="saved-list"></div>
@@ -200,8 +195,8 @@
     </div>
 
     <div id="winner-display">
-        <h1 style="color: gold; font-size: 2.2rem;">🏆 최종 우승 🏆</h1>
-        <div id="winner-name" style="font-size: 1.5rem; margin: 15px 0; font-weight: bold;"></div>
+        <h1 style="color: gold; font-size: 2rem;">🏆 최종 우승 🏆</h1>
+        <div id="winner-name" style="font-size: 1.4rem; margin: 15px 0; font-weight: bold;"></div>
         <div id="winner-tweet" style="max-width: 450px; margin: 0 auto; transform: scale(0.9);"></div>
         <button class="main-btn" style="margin-top:30px; max-width: 200px;" onclick="location.reload()">다시하기</button>
     </div>
