@@ -1,130 +1,146 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzhka5kDERhT7SEUHsnnTS0uz50dL75zvWQUp7dXOzapcNplSEHLun_wcTqqtCxN9GS8Q/exec";
+// GAS URL 설정
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzUIg2yG1Ivg7Vbi5eLxI0o9H_ehJKnFmYKNjkdqX__h3wfkJyPFF1BZHZLGJjEVnofNQ/exec";
 
-let inputMode = 'links'; 
-let items = [];
-let winners = [];
-let currentIndex = 0;
-let roundCount = 1;
-let lastLoadedData = null;
-
-window.onload = loadSavedList;
-
-function setMode(mode) {
-    inputMode = mode;
-    document.getElementById('mode-links-btn').classList.toggle('active', mode === 'links');
-    document.getElementById('mode-pairs-btn').classList.toggle('active', mode === 'pairs');
+// 1. 모달 닫기 함수 (가장 먼저 정의)
+function closeModal() {
+    const modal = document.getElementById('list-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
-async function loadSavedList() {
-    const listDiv = document.getElementById('saved-list');
-    listDiv.innerHTML = "로딩 중...";
-    try {
-        const response = await fetch(GAS_URL);
-        const data = await response.json();
-        listDiv.innerHTML = data.length ? "" : "저장된 데이터가 없습니다.";
-        data.forEach(item => {
-            const div = document.createElement('div');
-            div.className = "saved-item";
-            div.innerHTML = `<span>${item.title}</span> <span style="color:#555;">${new Date(item.date).toLocaleDateString()}</span>`;
-            div.onclick = () => {
-                document.getElementById('wc-title').value = item.title;
-                document.getElementById('data-input').value = item.raw;
-                setMode(item.mode);
-                lastLoadedData = { title: item.title, mode: item.mode, raw: item.raw };
-                alert("불러오기 완료!");
-            };
-            listDiv.appendChild(div);
-        });
-    } catch (e) { listDiv.innerHTML = "불러오기 실패"; }
-}
-
-async function uploadToSheet(title, mode, raw) {
-    try {
-        await fetch(GAS_URL, { method: "POST", body: JSON.stringify({ title, mode, raw }), mode: 'no-cors' });
-    } catch (e) { console.error("저장 실패", e); }
-}
-
-function extractTweetId(url) {
-    const match = url.match(/status\/(\d+)/);
-    return match ? match[1] : null;
-}
-
-function startGame() {
-    const title = document.getElementById('wc-title').value || "이상형 월드컵";
-    const rawText = document.getElementById('data-input').value.trim();
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== "");
+// 2. 목록 불러오기 함수
+async function openTitleList() {
+    const container = document.getElementById('title-list-container');
+    const modal = document.getElementById('list-modal');
     
-    items = [];
-    if (inputMode === 'links') {
-        lines.forEach(l => { const id = extractTweetId(l); if(id) items.push({ id, name: "" }); });
-    } else {
-        for (let i = 0; i < lines.length; i += 2) {
-            if (lines[i] && lines[i+1]) {
-                const id = extractTweetId(lines[i+1]);
-                if (id) items.push({ id, name: lines[i] });
-            }
+    container.innerHTML = "<p>목록을 불러오는 중...</p>";
+    modal.classList.remove('hidden'); // 모달 먼저 보여주기
+
+    try {
+        const response = await fetch(`${GAS_URL}?type=list`);
+        const data = await response.json();
+        
+        container.innerHTML = "";
+        if (!data.titles || data.titles.length === 0) {
+            container.innerHTML = "<p style='color:red;'>저장된 데이터가 없습니다.</p>";
+            return;
+        }
+
+        data.titles.forEach(title => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerText = title;
+            div.onclick = () => loadSpecificWorldCup(title);
+            container.appendChild(div);
+        });
+    } catch (e) {
+        container.innerHTML = "<p>오류 발생: " + e.message + "</p>";
+    }
+}
+
+// 3. 특정 월드컵 데이터 가져오기
+async function loadSpecificWorldCup(title) {
+    closeModal();
+    try {
+        const response = await fetch(`${GAS_URL}?type=data&title=${encodeURIComponent(title)}`);
+        const data = await response.json();
+        
+        document.getElementById('main-title').value = data.mainTitle;
+        document.getElementById('links-input').value = data.items.map(i => `${i.name}\n${i.link}`).join('\n');
+    } catch (e) {
+        alert("데이터 로드 실패");
+    }
+}
+
+// 4. 시트에 저장하기
+async function saveToSheet() {
+    const mainTitle = document.getElementById('main-title').value;
+    const rawInput = document.getElementById('links-input').value.split('\n').map(l => l.trim()).filter(l => l !== "");
+    
+    if(!mainTitle || rawInput.length < 2) return alert("데이터를 입력하세요.");
+
+    const items = [];
+    for (let i = 0; i < rawInput.length; i += 2) {
+        if(rawInput[i] && rawInput[i+1]) items.push({ name: rawInput[i], link: rawInput[i+1] });
+    }
+
+    try {
+        const response = await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ mainTitle, items })
+        });
+        const res = await response.json();
+        alert(res.message);
+    } catch (e) { alert("저장 실패"); }
+}
+
+// 5. 월드컵 게임 로직
+let candidates = [];
+let winners = [];
+let currentMatchIdx = 0;
+
+// script.js의 startWorldCup 함수 내부를 수정하세요.
+function startWorldCup() {
+    const mainTitle = document.getElementById('main-title').value; // 타이틀 가져오기
+    const lines = document.getElementById('links-input').value.split('\n').map(l => l.trim()).filter(l => l !== "");
+    
+    candidates = [];
+    for (let i = 0; i < lines.length; i += 2) {
+        if (lines[i] && lines[i+1]) {
+            const cleanUrl = lines[i+1].replace('x.com', 'twitter.com').split('?')[0];
+            candidates.push({ 
+                name: lines[i], 
+                html: `<blockquote class="twitter-tweet" data-media-max-width="560"><a href="${cleanUrl}"></a></blockquote>` 
+            });
         }
     }
-
-    if (items.length < 2) return alert("데이터가 부족합니다.");
-
-    const isModified = !lastLoadedData || title !== lastLoadedData.title || inputMode !== lastLoadedData.mode || rawText !== lastLoadedData.raw;
-    if (isModified) uploadToSheet(title, inputMode, rawText);
-
-    items.sort(() => Math.random() - 0.5);
-    document.getElementById('display-title').innerText = title;
-    document.getElementById('setup-ui').style.display = 'none';
-    document.getElementById('game-ui').style.display = 'block';
-    document.getElementById('top-bar').style.display = 'flex';
+    if (candidates.length < 2) return alert("후보가 부족합니다.");
     
-    renderRound();
+    // 게임 화면에 타이틀 세팅
+    document.getElementById('game-title').innerText = mainTitle;
+    
+    candidates.sort(() => Math.random() - 0.5);
+    document.getElementById('setup-container').classList.add('hidden');
+    document.getElementById('game-container').classList.remove('hidden');
+    renderMatch();
 }
 
-async function renderRound() {
-    const leftBox = document.getElementById('left-tweet-container');
-    const rightBox = document.getElementById('right-tweet-container');
-    leftBox.innerHTML = ""; rightBox.innerHTML = "";
-    
-    document.getElementById('left-name').innerText = items[currentIndex].name;
-    document.getElementById('right-name').innerText = items[currentIndex+1].name;
+// script.js 파일의 renderMatch 함수 전체를 아래 코드로 교체하세요.
 
-    const opt = { theme: 'dark', align: 'center', conversation: 'none', lang: 'ko', dnt: true };
-    twttr.widgets.createTweet(items[currentIndex].id, leftBox, opt);
-    twttr.widgets.createTweet(items[currentIndex+1].id, rightBox, opt);
-    
-    updateRoundTitle();
-}
+function renderMatch() {
+    const total = candidates.length;
+    const roundName = total === 2 ? "결승전" : `${total}강`;
+    document.getElementById('round-text').innerText = `${roundName} (${(currentMatchIdx/2)+1} / ${total/2})`;
 
-function updateRoundTitle() {
-    const total = items.length;
-    const matchInfo = document.getElementById('display-match');
-    let roundName = "";
+    const left = candidates[currentMatchIdx];
+    const right = candidates[currentMatchIdx+1];
 
-    if (total === 2) {
-        roundName = "결승전";
-        matchInfo.innerText = ""; 
-    } else {
-        const rounds = { 4: "4강", 8: "8강", 16: "16강", 32: "32강", 64: "64강" };
-        roundName = rounds[total] || total + "강";
-        matchInfo.innerText = `${roundCount}/${total / 2}`;
+    // 왼쪽 후보 데이터 주입
+    document.getElementById('left-video').innerHTML = left.html;
+    document.getElementById('left-name').innerText = left.name;
+
+    // 오른쪽 후보 데이터 주입
+    document.getElementById('right-video').innerHTML = right.html;
+    document.getElementById('right-name').innerText = right.name;
+
+    // 트위터 위젯 다시 로드
+    if (window.twttr?.widgets) {
+        window.twttr.widgets.load(document.getElementById('game-container'));
     }
-    document.getElementById('display-round').innerText = roundName;
 }
 
-function selectWinner(idx) {
-    winners.push(items[currentIndex + idx]);
-    currentIndex += 2;
-    if (currentIndex >= items.length) {
-        items = [...winners]; winners = []; currentIndex = 0; roundCount = 1;
-        if (items.length === 1) return showWinner(items[0]);
-    } else { roundCount++; }
-    renderRound();
-}
-
-function showWinner(item) {
-    document.getElementById('game-ui').style.display = 'none';
-    document.getElementById('top-bar').style.display = 'none';
-    document.getElementById('winner-display').style.display = 'block';
-    document.getElementById('winner-name').innerText = item.name;
-    twttr.widgets.createTweet(item.id, document.getElementById('winner-tweet'), { theme: 'dark', align: 'center', conversation: 'none' });
+function selectWinner(index) {
+    winners.push(candidates[currentMatchIdx + index]);
+    currentMatchIdx += 2;
+    if (currentMatchIdx >= candidates.length) {
+        if (winners.length === 1) {
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+            document.getElementById('winner-display').innerHTML = `<h2>${winners[0].name}</h2>` + winners[0].html;
+            if (window.twttr?.widgets) window.twttr.widgets.load();
+        } else {
+            candidates = [...winners]; winners = []; currentMatchIdx = 0; renderMatch();
+        }
+    } else { renderMatch(); }
 }
