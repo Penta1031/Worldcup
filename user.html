@@ -37,6 +37,73 @@
 
         .hidden { display: none !important; }
         #winner-display { margin-top: 20px; }
+
+        /* 가로 모드 모바일 최적화 여백 */
+        /* 가로 모드 (Landscape) 최적화: 한 화면에 모두 보이기 */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            /* 1. 전체 컨테이너 여백 및 높이 조절 */
+            #game-container {
+                padding: 5px 20px !important;
+                max-width: 95% !important;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                height: 100vh; /* 화면 높이에 딱 맞춤 */
+                box-sizing: border-box;
+            }
+
+            /* 2. 상단 타이틀 및 라운드 텍스트 크기 대폭 축소 */
+            #game-title {
+                font-size: 12px !important;
+                padding: 3px 6px !important;
+                margin-bottom: 2px !important;
+            }
+
+            #round-text {
+                font-size: 18px !important;
+                margin-bottom: 8px !important;
+                font-weight: 800;
+            }
+
+            /* 3. 매치 컨테이너 간격 조절 */
+            .match-container {
+                gap: 8px !important;
+                align-items: stretch !important;
+            }
+
+            /* 4. 후보 카드 내부 요소 축소 */
+            .candidate-name {
+                font-size: 14px !important;
+                padding: 5px !important;
+            }
+
+            /* 5. 영상 영역 높이 제한 (가장 중요) */
+            .video-container {
+                min-height: 100px !important; /* 최소 높이 하향 */
+                height: 60vh !important;     /* 화면 높이의 35%만 차지 */
+                overflow: hidden;
+            }
+
+            /* 트위터 위젯 크기 강제 조절 */
+            .twitter-tweet {
+                transform: scale(0.8); /* 위젯 자체를 80% 크기로 축소 */
+                transform-origin: center top;
+                margin-top: -2px !important;
+            }
+
+            /* 6. 선택 버튼 높이 축소 */
+            .btn-select {
+                padding: 6px 0 !important;
+                font-size: 10px !important;
+            }
+
+            /* 7. VS 텍스트 크기 조절 */
+            .vs-text {
+                font-size: 24px !important;
+                text-shadow: 1px 1px 0 #000 !important;
+            }
+        }
+
     </style>
 </head>
 <body>
